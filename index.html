@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Stress Tool</title>
+
+    <!-- Javascript -->
+    <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+    <script src="lib/numericjs/numeric.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.11/lodash.min.js"></script>
+    <script async type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="lib/Skeleton-2.0.4/css/normalize.css">
+    <link rel="stylesheet" href="lib/Skeleton-2.0.4/css/skeleton.css">
+
+    <!-- Charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0/dist/Chart.min.js"></script>
+    <script src="https://unpkg.com/vue-chartjs/dist/vue-chartjs.min.js"></script>
+
+    <style>
+        label > input { display: inline-block; margin-left: 1em; }
+        .text_input { font-family: 'Courier New', Courier, monospace; font-weight: bold; color: rgb(57, 19, 230); }
+        .strikethrough { text-decoration: line-through; }
+        section { margin-bottom: 4em;  }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="app">
+            <h2>Stress Tool</h2>
+            <section id="definition">
+                <h3>Definition</h3>
+                <p>Input the 6 stress components at your point of interest.</p>
+                <div class="row">
+                    <div class="four columns">
+                        <label>&sigma;<sub>x</sub><input type="text" v-model.number="s_xComputed" class="text_input"></label>
+                    </div>
+                    <div class="four columns">
+                        <label>&sigma;<sub>y</sub><input type="text" v-model.number="s_yComputed" class="text_input"></label>
+                    </div>
+                    <div class="four columns">
+                        <label>&sigma;<sub>z</sub><input type="text" v-model.number="s_zComputed" class="text_input"></label>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="four columns">
+                        <label>&tau;<sub>xy</sub><input type="text" v-model.number="tau_xyComputed" class="text_input"></label>
+                    </div>
+                    <div class="four columns">
+                        <label>&tau;<sub>yz</sub><input type="text" v-model.number="tau_yzComputed" class="text_input"></label>
+                    </div>
+                    <div class="four columns">
+                        <label>&tau;<sub>zx</sub><input type="text" v-model.number="tau_zxComputed" class="text_input"></label>
+                    </div>
+                </div>
+                <p v-html="st"></p>
+            </section>
+            
+            <section id="principal_stresses">
+                <h3>Principal Stresses</h3>
+                <table class="u-full-width">
+                    <thead>
+                        <tr>
+                            <th>Stress</th>
+                            <th>Value</th>
+                            <th>Direction</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>&sigma;<sub>1</sub></td>
+                            <td class="text_output">{{ Number(P1).toLocaleString(undefined, {maximumSignificantDigits: 5}) }}</td>
+                            <td class="text_output strikethrough">{{ P1_vec }}</td>
+                        </tr>
+                        <tr>
+                            <td>&sigma;<sub>2</sub></td>
+                            <td class="text_output">{{ Number(P2).toLocaleString(undefined, {maximumSignificantDigits: 5}) }}</td>
+                            <td class="text_output strikethrough">{{ P2_vec }}</td>
+                        </tr>
+                        <tr>
+                            <td>&sigma;<sub>3</sub></td>
+                            <td class="text_output">{{ Number(P3).toLocaleString(undefined, {maximumSignificantDigits: 5}) }}</td>
+                            <td class="text_output strikethrough">{{ P3_vec }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section>
+                <h3>Failure</h3>
+                <table class="u-full-width">
+                    <tbody>
+                        <tr>
+                            <td>von Mises Stress</td>
+                            <td class="text_output">{{ Number(Svm).toLocaleString(undefined, { maximumSignificantDigits: 5 }) }}</td>
+                        </tr>
+                        <tr>
+                            <td>Maximum Shear Stress</td>
+                            <td class="text_output">{{ Number(Sms).toLocaleString(undefined,{ maximumSignificantDigits: 5 }) }}</td>
+                        </tr>
+                        <tr>
+                            <td>Maximum Normal Stress</td>
+                            <td class="text_output">{{ Number(P1).toLocaleString(undefined, { maximumSignificantDigits: 5 }) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section>
+                <h3>Fatigue</h3>
+                <p>Enter a fatigue curve as a comma-separated list to perform a fatigue evaluation.</p>
+                <label for="fat_cycles">Cycles</label><input v-model="fatigue_data_cycles_raw" placeholder="1e3, 1e4, 1e5, 1e6" id="fat_cycles" type="text" class="u-full-width text_input">
+                <label for="fat_stress">Stress</label><input v-model="fatigue_data_stress_raw" placeholder="60e3, 40e3, 20e3, 15e3" id="fat_stress" type="text" class="u-full-width text_input">
+                
+                <label for="fatigue_stress_input">Stress to interpolate with:
+                    <select id="fatigue_stress_input" v-model="fatigue_stress_input">
+                        <option>von Mises</option>
+                        <option>First Principal</option>
+                        <option>Sx</option>
+                        <option>Sy</option>
+                        <option>Sz</option>
+                    </select>
+                </label>
+                <table class="u-full-width">
+                    <tr>
+                        <td>Stress</td>
+                        <td>{{ Number(S_fatigue_input).toLocaleString(undefined, {maximumSignificantDigits: 5}) }}</td>
+                    </tr>
+                    <tr>
+                        <td>Cycles</td>
+                        <td>{{ Number(cycles).toLocaleString(undefined, {maximumSignificantDigits: 5}) }}</td>
+                    </tr>
+                </table>
+                <fatigue-plot v-bind:chart-data="datacollection"></fatigue-plot>
+            </section>
+        </div>
+        
+        <script src="script.js"></script>
+    </div>
+</body>
+</html>
