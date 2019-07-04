@@ -13,8 +13,7 @@
     <script async type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"></script>
     
     <!-- Stylesheets -->
-    <link rel="stylesheet" href="lib/Skeleton-2.0.4/css/normalize.css">
-    <link rel="stylesheet" href="lib/Skeleton-2.0.4/css/skeleton.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 
     <!-- Charts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0/dist/Chart.min.js"></script>
@@ -25,6 +24,8 @@
         .text_input { font-family: 'Courier New', Courier, monospace; font-weight: bold; color: rgb(57, 19, 230); }
         .strikethrough { text-decoration: line-through; }
         section { margin-bottom: 4em;  }
+        .input_label { display: inline-block; width: 50px; padding-right: 1em; }
+        .inputMaxWidth { width: 100%; }
     </style>
 </head>
 <body>
@@ -35,25 +36,43 @@
                 <h3>Definition</h3>
                 <p>Input the 6 stress components at your point of interest.</p>
                 <div class="row">
-                    <div class="four columns">
-                        <label>&sigma;<sub>x</sub><input type="text" v-model.number="s_xComputed" class="text_input"></label>
+                    <div class="col-md">
+                        <div class="form-group form-inline">
+                            <label class="input_label" for="s_x">&sigma;<sub>x</sub></label>
+                            <input type="text" v-model.number="s_xComputed" class="text_input form-control" id="s_x">
+                        </div>
                     </div>
-                    <div class="four columns">
-                        <label>&sigma;<sub>y</sub><input type="text" v-model.number="s_yComputed" class="text_input"></label>
+                    <div class="col-md">
+                        <div class="form-group form-inline">
+                            <label class="input_label" for="s_y">&sigma;<sub>y</sub></label>
+                            <input type="text" v-model.number="s_yComputed" class="text_input form-control" id="s_y">
+                        </div>
                     </div>
-                    <div class="four columns">
-                        <label>&sigma;<sub>z</sub><input type="text" v-model.number="s_zComputed" class="text_input"></label>
+                    <div class="col-md">
+                        <div class="form-group form-inline">
+                            <label class="input_label" for="s_z">&sigma;<sub>z</sub></label>
+                            <input type="text" v-model.number="s_zComputed" class="text_input form-control" id="s_z">
+                        </div>
                     </div>
                 </div>
                 <div class="row">
-                    <div class="four columns">
-                        <label>&tau;<sub>xy</sub><input type="text" v-model.number="tau_xyComputed" class="text_input"></label>
+                    <div class="col-md">
+                        <div class="form-group form-inline">
+                            <label class="input_label" for="tau_xy">&tau;<sub>xy</sub></label>
+                            <input id="tau_xy" type="text" v-model.number="tau_xyComputed" class="text_input form-control">
+                        </div>
                     </div>
-                    <div class="four columns">
-                        <label>&tau;<sub>yz</sub><input type="text" v-model.number="tau_yzComputed" class="text_input"></label>
+                    <div class="col-md">
+                        <div class="form-group form-inline">
+                            <label class="input_label" for="tau_yz">&tau;<sub>yz</sub></label>
+                            <input id="tau_yz" type="text" v-model.number="tau_yzComputed" class="text_input form-control">
+                        </div>
                     </div>
-                    <div class="four columns">
-                        <label>&tau;<sub>zx</sub><input type="text" v-model.number="tau_zxComputed" class="text_input"></label>
+                    <div class="col-md">
+                        <div class="form-group form-inline">
+                            <label class="input_label" for="tau_zx">&tau;<sub>zx</sub></label>
+                            <input id="tau_zx" type="text" v-model.number="tau_zxComputed" class="text_input form-control">
+                        </div>
                     </div>
                 </div>
                 <p v-html="st"></p>
@@ -61,7 +80,7 @@
             
             <section id="principal_stresses">
                 <h3>Principal Stresses</h3>
-                <table class="u-full-width">
+                <table class="table">
                     <thead>
                         <tr>
                             <th>Stress</th>
@@ -85,13 +104,28 @@
                             <td class="text_output">{{ Number(P3).toLocaleString(undefined, {maximumSignificantDigits: 5}) }}</td>
                             <td class="text_output strikethrough">{{ P3_vec }}</td>
                         </tr>
+                        <tr>
+                            <td>&tau;<sub>1</sub></td>
+                            <td class="text_output">{{ Number(tau_1).toLocaleString(undefined, {maximumSignificantDigits: 5}) }}</td>
+                            <td class="text_output"></td>
+                        </tr>
+                        <tr>
+                            <td>&tau;<sub>2</sub></td>
+                            <td class="text_output">{{ Number(tau_2).toLocaleString(undefined, {maximumSignificantDigits: 5}) }}</td>
+                            <td class="text_output"></td>
+                        </tr>
+                        <tr>
+                            <td>&tau;<sub>3</sub></td>
+                            <td class="text_output">{{ Number(tau_3).toLocaleString(undefined, {maximumSignificantDigits: 5}) }}</td>
+                            <td class="text_output"></td>
+                        </tr>
                     </tbody>
                 </table>
             </section>
 
             <section>
                 <h3>Failure</h3>
-                <table class="u-full-width">
+                <table class="table">
                     <tbody>
                         <tr>
                             <td>von Mises Stress</td>
@@ -111,12 +145,18 @@
 
             <section>
                 <h3>Fatigue</h3>
-                <p>Enter a fatigue curve as a comma-separated list to perform a fatigue evaluation.</p>
-                <label for="fat_cycles">Cycles</label><input v-model="fatigue_data_cycles_raw" placeholder="1e3, 1e4, 1e5, 1e6" id="fat_cycles" type="text" class="u-full-width text_input">
-                <label for="fat_stress">Stress</label><input v-model="fatigue_data_stress_raw" placeholder="60e3, 40e3, 20e3, 15e3" id="fat_stress" type="text" class="u-full-width text_input">
+                <p>Enter a fatigue curve as a comma-separated list to perform a fatigue evaluation (semi-log).</p>
+                <div class="form-group">
+                    <label class="input_label" for="fat_cycles">Cycles</label>
+                    <input class="text_input form-control" v-model="fatigue_data_cycles_raw" placeholder="1e3, 1e4, 1e5, 1e6" id="fat_cycles" type="text" class="u-full-width text_input">
+                </div>
+                <div class="form-group">
+                    <label class="input_label" for="fat_stress">Stress</label>
+                    <input class="text_input form-control" v-model="fatigue_data_stress_raw" placeholder="60e3, 40e3, 20e3, 15e3" id="fat_stress" type="text" class="u-full-width text_input">
+                </div>
                 
-                <label for="fatigue_stress_input">Stress to interpolate with:
-                    <select id="fatigue_stress_input" v-model="fatigue_stress_input">
+                <label for="fatigue_stress_input">Interpolate with:
+                    <select id="fatigue_stress_input" v-model="fatigue_stress_input" class="custom-select">
                         <option>von Mises</option>
                         <option>First Principal</option>
                         <option>Sx</option>
@@ -124,7 +164,9 @@
                         <option>Sz</option>
                     </select>
                 </label>
-                <table class="u-full-width">
+
+                <h4>Result</h4>
+                <table class="table">
                     <tr>
                         <td>Stress</td>
                         <td>{{ Number(S_fatigue_input).toLocaleString(undefined, {maximumSignificantDigits: 5}) }}</td>
@@ -137,8 +179,7 @@
                 <fatigue-plot v-bind:chart-data="datacollection"></fatigue-plot>
             </section>
         </div>
-        
-        <script src="script.js"></script>
     </div>
+    <script src="script.js"></script>
 </body>
 </html>

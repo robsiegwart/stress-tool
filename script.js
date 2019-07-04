@@ -1,5 +1,3 @@
-// Vue.config.devtools = true;
-
 var chart = Vue.component('fatigue-plot', {
     extends: VueChartJs.Scatter,
     mixins: [VueChartJs.mixins.reactiveProp],
@@ -171,7 +169,7 @@ var app = new Vue({
         P2(){ return this.e_vals.sort(sortNumber)[1]; },
         P3(){ return this.e_vals.sort(sortNumber)[0]; },
 
-        // Principal direction vectors  -- they don't seem to be coming out correctly ...
+        // Principal direction vectors  -- these don't seem to be coming out correctly ...
         P1_vec(){
             let vec = this.e_vecs[this.e_vals.indexOf(this.P1)];
             return '[ ' + Number(vec[0]).toPrecision(3) + ', ' + Number(vec[1]).toPrecision(3) + ', ' + Number(vec[2]).toPrecision(3) + ' ]';
@@ -185,12 +183,17 @@ var app = new Vue({
             return '[ ' + Number(vec[0]).toPrecision(3) + ', ' + Number(vec[1]).toPrecision(3) + ', ' + Number(vec[2]).toPrecision(3) + ' ]';
         },
 
+        // Principal shearing stresses
+        tau_1(){ return 0.5*(this.P2 - this.P3)},
+        tau_2(){ return 0.5*(this.P3 - this.P1)},
+        tau_3(){ return 0.5*(this.P1 - this.P2)},
+
         // Derived stresses
         Svm(){    // von Mises
             return Math.sqrt(((this.P1-this.P2)**2+(this.P2-this.P3)**2+(this.P3-this.P1)**2+6*(this.tau_xy**2+this.tau_yz**2+this.tau_zx**2))/2);
         },
         Sms(){    // Max shear
-            return 0.5*(this.P1 - this.P3);
+            return this.tau_2;
         },
 
         S_fatigue_input(){
