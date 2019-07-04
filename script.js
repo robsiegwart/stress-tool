@@ -184,9 +184,9 @@ var app = new Vue({
         },
 
         // Principal shearing stresses
-        tau_1(){ return 0.5*(this.P2 - this.P3)},
-        tau_2(){ return 0.5*(this.P3 - this.P1)},
-        tau_3(){ return 0.5*(this.P1 - this.P2)},
+        tau_1(){ return 0.5*(this.P1 - this.P3)},
+        tau_2(){ return 0.5*(this.P1 - this.P2)},
+        tau_3(){ return 0.5*(this.P2 - this.P3)},
 
         // Derived stresses
         Svm(){    // von Mises
