@@ -39,7 +39,7 @@ var chart = Vue.component('fatigue-plot', {
 var app = new Vue({
     el: '#app',
     data: {
-        s_x: 24000,
+        s_x: 38000,
         s_y: 12000,
         s_z: 0,
         tau_xy: 0,
@@ -47,8 +47,8 @@ var app = new Vue({
         tau_zx: 0,
         st: '',
         fatigue_stress_input: 'von Mises',
-        fatigue_data_cycles_raw: '1e3, 5e3, 1e5, 1e6',
-        fatigue_data_stress_raw: '60e3, 30e3, 20e3, 10e3',
+        fatigue_data_cycles_raw: '2e4, 1e5, 1e6, 1e7',
+        fatigue_data_stress_raw: '50e3, 40e3, 32e3, 26e3',
         fatigue_data_cycles: [],
         fatigue_data_stress: [],
         datacollection: null,
@@ -250,8 +250,8 @@ function interp1d(xs,ys){
     this.xmin = this.xs.reduce((a,c) => Math.min(a,c));
     this.xmax = this.xs.reduce((a,c) => Math.max(a,c));
     this.linterp = function(x){
-        if ( (x > this.xmax) || (x < this.xmin) ){
-            return null
+        if ( x < this.xmin) {
+            return 1
         }
         else {
             let start = this.xs.indexOf(_.findLast(this.xs,function(e){ return e <= x }));
