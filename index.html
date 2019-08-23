@@ -15,9 +15,10 @@
     <!-- Stylesheets -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 
-    <!-- Charts -->
+    <!-- Charts/Graphics -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0/dist/Chart.min.js"></script>
     <script src="https://unpkg.com/vue-chartjs/dist/vue-chartjs.min.js"></script>
+    <script src="lib/two.min.js"></script>
 
     <style>
         label > input { display: inline-block; margin-left: 1em; }
@@ -26,6 +27,7 @@
         section { margin-bottom: 4em;  }
         .input_label { display: inline-block; width: 50px; padding-right: 1em; }
         .inputMaxWidth { width: 100%; }
+        svg { border: solid 1px lightgrey; }
     </style>
 </head>
 <body>
@@ -108,6 +110,8 @@
                         </tr>
                     </tbody>
                 </table>
+                <div class="text-center"><svg id="mohr_circle_plot"></svg></div>
+                <p class="text-center">Mohr Circle Plot</p>
             </section>
 
             <section>
@@ -160,7 +164,7 @@
                     </tr>
                     <tr>
                         <td>Cycles</td>
-                        <td>{{ Number(cycles).toLocaleString(undefined, {maximumSignificantDigits: 5}) }}</td>
+                        <td>{{ cycles }}</td>
                     </tr>
                 </table>
                 <fatigue-plot v-bind:chart-data="datacollection"></fatigue-plot>

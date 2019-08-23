@@ -53,6 +53,10 @@ var app = new Vue({
         fatigue_data_stress: [],
         datacollection: null,
         cycles: 0,
+        two: null,
+        mohr_w: 600,
+        mohr_h: 300,
+        fig_span: 0.75,
     },
     methods: {
         update_S_mj: function(){  // Update MathJax
@@ -126,6 +130,81 @@ var app = new Vue({
                 }
             }
         },
+        draw_mohr_circle_plot(){
+            this.two.clear()
+            
+            // set the scale
+            let scale = Math.min( this.fig_span*this.mohr_w/(this.P1 - this.P3),
+                                  this.fig_span*this.mohr_h/(this.P1 - this.P3) );
+
+            // determine the center point
+            let x = 0.5*(this.mohr_w - scale*(this.P1 + this.P3)),
+                y = this.mohr_h/2;
+            
+            // draw circles
+            let p1circ = this.two.makeCircle(x + scale*0.5*(this.P1+this.P3),y,scale*0.5*(this.P1-this.P3));
+            p1circ.fill = '#b7f5d1';
+            p1circ.stroke = '#1a4f30';
+            p1circ.linewidth = 2;
+            
+            let p2circ = this.two.makeCircle(x + scale*0.5*(this.P1+this.P2),y,scale*0.5*(this.P1-this.P2));
+            p2circ.fill = '#FFF';
+            p2circ.stroke = '#d94925';
+            p2circ.linewidth = 2;
+            
+            let p3circ = this.two.makeCircle(x + scale*0.5*(this.P2+this.P3),y,scale*0.5*(this.P2-this.P3));
+            p3circ.fill = '#FFF';
+            p3circ.stroke = '#2569d9';
+            p3circ.linewidth = 2;
+            
+            // draw axes
+            let x_tip = [this.mohr_w-60, y],
+                y_tip = [x, 20],
+                x_axis = this.two.makeLine(10, y, x_tip[0],x_tip[1] ),
+                x_axis_arrow1 = this.two.makeLine(x_tip[0],x_tip[1],x_tip[0]-7,x_tip[1]-4 ),
+                x_axis_arrow2 = this.two.makeLine(x_tip[0],x_tip[1],x_tip[0]-7,x_tip[1]+4 ),
+                y_axis = this.two.makeLine(x, this.mohr_h-10, y_tip[0], y_tip[1] ),
+                y_axis_arrow1 = this.two.makeLine(y_tip[0], y_tip[1], y_tip[0]-4, y_tip[1]+7 ),
+                y_axis_arrow2 = this.two.makeLine(y_tip[0], y_tip[1], y_tip[0]+4, y_tip[1]+7 );
+
+            x_axis.stroke = 'grey';
+            x_axis_arrow1.stroke = 'grey';
+            x_axis_arrow2.stroke = 'grey';
+            y_axis.stroke = 'grey';
+            y_axis_arrow1.stroke = 'grey';
+            y_axis_arrow2.stroke = 'grey';
+
+            let sigma = new Two.Text('Normal',this.mohr_w-30,y),
+                tau = new Two.Text('Shear',x,10);
+            this.two.add(sigma);
+            this.two.add(tau);            
+
+            // add labels
+            let p1t = new Two.Text('P1', scale*this.P1 + x + 15, y - 10);
+            this.two.add(p1t);
+            if(this.P2 != 0){
+                let p2t = new Two.Text('P2', scale*this.P2 + x + 15, y - 10);
+                this.two.add(p2t);
+            }
+            if(this.P3 != 0){
+                let p3t = new Two.Text('P3', scale*this.P3 + x - 15, y - 10);
+                this.two.add(p3t);
+            }
+            if(this.tau_1 != 0){
+                let tau_1_t = new Two.Text('Tau_1', scale*0.5*(this.P1 + this.P3) + x, y - scale*0.5*(this.P1 - this.P3) - 10);
+                this.two.add(tau_1_t);
+            }
+            if(this.tau_2 != 0){
+                let tau_2_t = new Two.Text('Tau_2', scale*0.5*(this.P1 + this.P2) + x, y - scale*0.5*(this.P1 - this.P2) - 10);
+                this.two.add(tau_2_t);
+            }
+            if(this.tau_3 != 0){
+                let tau_3_t = new Two.Text('Tau_3', scale*0.5*(this.P2 + this.P3) + x, y - scale*0.5*(this.P2 - this.P3) - 10);
+                this.two.add(tau_3_t);
+            }
+
+            this.two.update()
+        }
     },
     computed: {
         // Stress components
@@ -212,6 +291,14 @@ var app = new Vue({
         },
     },
     mounted(){
+        // Draw Mohr plot
+        let plot_elem = document.getElementById('mohr_circle_plot');
+        plot_elem.setAttribute('width',this.mohr_w);
+        plot_elem.setAttribute('height',this.mohr_h);
+        this.two = new Two({ width: this.mohr_w, height: this.mohr_h }).appendTo(plot_elem);
+        this.draw_mohr_circle_plot();
+
+        // Draw fatigue plot
         this.update_fatigue_plot();
     },
     watch: {
@@ -230,7 +317,13 @@ var app = new Vue({
         eig(){
             this.calculate_cycles();
             this.update_fatigue_plot();
-        }
+        },
+        s_x() { this.draw_mohr_circle_plot() },
+        s_y() { this.draw_mohr_circle_plot() },
+        s_z() { this.draw_mohr_circle_plot() },
+        tau_xy() { this.draw_mohr_circle_plot() },
+        tau_yz() { this.draw_mohr_circle_plot() },
+        tau_zx() { this.draw_mohr_circle_plot() },
     }
 })
 
@@ -264,11 +357,3 @@ function interp1d(xs,ys){
         }
     }
 }
-
-
-
-// window.onbeforeunload = function () {
-//     return 'Leave site? Changes may not be saved.'
-// }
-
-// window.__VUE_DEVTOOLS_GLOBAL_HOOK__.Vue = app.constructor;
