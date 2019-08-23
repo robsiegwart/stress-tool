@@ -25,7 +25,7 @@
         .text_input { font-family: 'Courier New', Courier, monospace; font-weight: bold; color: rgb(57, 19, 230); }
         .strikethrough { text-decoration: line-through; }
         section { margin-bottom: 4em;  }
-        .input_label { display: inline-block; width: 50px; padding-right: 1em; }
+        .input_label { display: inline-block; padding-right: 1em; }
         .inputMaxWidth { width: 100%; }
         svg { border: solid 1px lightgrey; }
     </style>
@@ -136,6 +136,7 @@
 
             <section>
                 <h3>Fatigue</h3>
+                <h4>Data</h4>
                 <p>Enter a fatigue curve as a comma-separated list to perform a fatigue evaluation (semi-log).</p>
                 <div class="form-group">
                     <label class="input_label" for="fat_cycles">Cycles</label>
@@ -145,8 +146,12 @@
                     <label class="input_label" for="fat_stress">Stress</label>
                     <input class="text_input form-control" v-model="fatigue_data_stress_raw" placeholder="60e3, 40e3, 20e3, 15e3" id="fat_stress" type="text" class="u-full-width text_input">
                 </div>
+
+                <div v-if="fatigue_input_warning1" class="alert alert-danger">{{ fatigue_input_warning1 }}</div>
+                <div v-if="fatigue_input_warning2" class="alert alert-danger">{{ fatigue_input_warning2 }}</div>
                 
-                <label for="fatigue_stress_input">Interpolate with:
+                <div class="form-group form-inline">
+                    <label for="fatigue_stress_input" class="input_label">Interpolate with:</label>
                     <select id="fatigue_stress_input" v-model="fatigue_stress_input" class="custom-select">
                         <option>von Mises</option>
                         <option>First Principal</option>
@@ -154,17 +159,51 @@
                         <option>Sy</option>
                         <option>Sz</option>
                     </select>
-                </label>
+                </div>
+
+                <h4>Extrapolation options</h4>
+                <div class="row">
+                    <div class="col-md-2">Left</div>
+                    <div class="col-md-10">
+                        <div class="custom-control custom-radio custom-control-inline">
+                            <input id="do_not_extrapolate_from_start" type="radio" v-model="left_end_condition" class="custom-control-input" value="do_not_adjust" name="fatigue_left_end_condition"></input>
+                            <label for="do_not_extrapolate_from_start" class="custom-control-label" name="fatigue_left_end_condition">Do not extrapolate</label>
+                        </div>
+                        <div class="custom-control custom-radio custom-control-inline">
+                            <input id="extrapolate_from_start" type="radio" v-model="left_end_condition" class="custom-control-input" value="extrapolate" name="fatigue_left_end_condition"></input>
+                            <label for="extrapolate_from_start" class="custom-control-label" name="fatigue_left_end_condition">Extrapolate linearly from first data point</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-2">Right</div>
+                    <div class="col-md-10">
+                        <div class="custom-control custom-radio custom-control-inline">
+                            <input id="do_not_adjust_end" v-model="right_end_condition" type="radio" class="custom-control-input" value="do_not_adjust" name="fatigue_right_end_condition"></input>
+                            <label for="do_not_adjust_end" class="custom-control-label">Do not extrapolate</label>
+                        </div>      
+                        <div class="custom-control custom-radio custom-control-inline">
+                            <input id="assume_Se" v-model="right_end_condition" type="radio" class="custom-control-input" value="as_Se" name="fatigue_right_end_condition"></input>
+                            <label for="assume_Se" class="custom-control-label">Use last defined data point as endurance limit</label>
+                        </div>      
+                        <div class="custom-control custom-radio custom-control-inline">
+                            <input id="extrapolate_from_end" v-model="right_end_condition" type="radio" class="custom-control-input" value="extrapolate" name="fatigue_right_end_condition"></input>
+                            <label for="extrapolate_from_end" class="custom-control-label">Extrapolate linearly from last data point</label>
+                        </div>
+                    </div>
+                </div>                
+
+                <br>
 
                 <h4>Result</h4>
                 <table class="table">
                     <tr>
-                        <td>Stress</td>
+                        <td>Stress input</td>
                         <td>{{ Number(S_fatigue_input).toLocaleString(undefined, {maximumSignificantDigits: 5}) }}</td>
                     </tr>
                     <tr>
                         <td>Cycles</td>
-                        <td>{{ cycles }}</td>
+                        <td>{{ typeof(cycles) == 'number' ? Number(cycles).toLocaleString(undefined, {maximumSignificantDigits: 5}) : cycles }}</td>
                     </tr>
                 </table>
                 <fatigue-plot v-bind:chart-data="datacollection"></fatigue-plot>

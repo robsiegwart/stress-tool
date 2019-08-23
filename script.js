@@ -39,54 +39,42 @@ var chart = Vue.component('fatigue-plot', {
 var app = new Vue({
     el: '#app',
     data: {
-        s_x: 38000,
-        s_y: 12000,
+        s_x: 25000,
+        s_y: -10000,
         s_z: 0,
         tau_xy: 0,
         tau_yz: 7000,
         tau_zx: 0,
         st: '',
         fatigue_stress_input: 'von Mises',
-        fatigue_data_cycles_raw: '2e4, 1e5, 1e6, 1e7',
-        fatigue_data_stress_raw: '50e3, 40e3, 32e3, 26e3',
-        fatigue_data_cycles: [],
-        fatigue_data_stress: [],
+        fatigue_data_cycles_raw: '1e4, 1e5, 1e6, 1e7',
+        fatigue_data_stress_raw: '50e3, 40e3, 32e3, 20e3',
         datacollection: null,
         cycles: 0,
         two: null,
         mohr_w: 600,
         mohr_h: 300,
         fig_span: 0.75,
+        left_end_condition: 'do_not_adjust',
+        right_end_condition: 'do_not_adjust',
+        fatigue_input_warning1: '',
+        fatigue_input_warning2: '',
     },
     methods: {
-        update_S_mj: function(){  // Update MathJax
+        update_S_mj: function(){            // Update MathJax
             this.st = '\\[ S = \\begin{bmatrix}'+ this.s_x + '&' + this.tau_xy + '&' + this.tau_zx + '\\\\' + this.tau_xy + '&' + this.s_y + '&' + this.tau_yz + '\\\\' + this.tau_zx + '&' + this.tau_yz + '&' + this.s_z + '\\end{bmatrix} \\]';
             this.$nextTick(function () {
                 MathJax.Hub.Typeset()
             });
         },
-        update_fatigue_plot(){    // Update the fatigue plot
+        update_fatigue_plot(){              // Update the fatigue plot
             this.plot_update_req = false;
-            // Convert stress data to array
-            let stresses = [];
-            this.fatigue_data_stress_raw.split(',').forEach(function (element) {
-                stresses.push(parseFloat(element));
-            });
-            this.fatigue_data_stress = stresses;
-
-            // Convert cycle data to array
-            let cycles = [];
-            this.fatigue_data_cycles_raw.split(',').forEach(function (element) {
-                cycles.push(parseFloat(element));
-            });
-            this.fatigue_data_cycles = cycles;
-
             this.calculate_cycles();
 
             let loop_count = Math.min(this.fatigue_data_cycles.length,this.fatigue_data_stress.length);
             let da = [];
             let i=0;
-            for(i;i<loop_count;i++){
+            for(i; i<loop_count; i++){
                 da.push({x: this.fatigue_data_cycles[i], y: this.fatigue_data_stress[i]})
             };
             this.datacollection = {
@@ -115,18 +103,56 @@ var app = new Vue({
             }
         },
         calculate_cycles(){
+            // Stress exists to right of data
             if (this.S_fatigue_input < this.fatigue_data_stress.reduce((a,c) => Math.min(a,c)) ){
-                this.cycles = 'Stress value below lowest fatigue stress data point.';
+                if(this.right_end_condition == 'as_Se'){
+                    this.cycles = 'Infinity (stress is below endurance limit)';
+                }
+                else if (this.right_end_condition == 'extrapolate'){
+                    let pn = {x:this.fatigue_data_cycles[this.fatigue_data_cycles.length-1], y:this.fatigue_data_stress[this.fatigue_data_stress.length-1]},
+                        pn_1 = {x:this.fatigue_data_cycles[this.fatigue_data_cycles.length-2], y:this.fatigue_data_stress[this.fatigue_data_stress.length-2]},
+                        m = (pn.y-pn_1.y)/(Math.log10(pn.x / pn_1.x)),
+                        b = pn_1.y - m*Math.log10(pn_1.x),
+                        result = parseInt(10**((this.S_fatigue_input-b)/m));
+                    if (isNaN(result)){
+                        this.cycles = 'N/A (overflow)';
+                    }
+                    else {
+                        this.cycles = result;
+                    }
+                }
+                else {
+                    this.cycles = 'Stress value is below lowest defined fatigue stress data point. (You can enable an extrapolation option above.)';
+                }
+            }
+            
+            // Stress exists to left of data
+            else if (this.S_fatigue_input > this.fatigue_data_stress.reduce((a,c) => Math.max(a,c)) ){
+                if (this.left_end_condition == 'extrapolate') {
+                    let pn = {x:this.fatigue_data_cycles[0], y:this.fatigue_data_stress[0]},
+                        pn_1 = {x:this.fatigue_data_cycles[1], y:this.fatigue_data_stress[1]},
+                        m = (pn.y-pn_1.y)/(Math.log10(pn.x / pn_1.x)),
+                        b = pn_1.y - m*Math.log10(pn_1.x),
+                        result = parseInt(10**((this.S_fatigue_input-b)/m));
+                    if (isNaN(result)){
+                        this.cycles = 'N/A';
+                    }
+                    else {
+                        this.cycles = result;
+                    }
+                }
+                else {
+                    this.cycles = 'Stress value is above highest defined fatigue stress data point. (You can enable an extrapolation option above.)';
+                }
             }
             else {
                 let fn = new interp1d( _.reverse( _.clone(this.fatigue_data_stress) ), _.reverse( _.clone(this.fatigue_data_cycles.map(x => Math.log10(x)) ) ) );
                 let exponent = fn.linterp(this.S_fatigue_input);
-                // console.log(exponent);
                 if (isNaN(exponent)){
                     this.cycles = 'Interpoland outside data range.'
                 }
                 else{
-                    this.cycles = 10**exponent;
+                    this.cycles = parseInt(10**exponent);
                 }
             }
         },
@@ -274,7 +300,6 @@ var app = new Vue({
         Sms(){    // Max shear
             return this.tau_2;
         },
-
         S_fatigue_input(){
             switch (this.fatigue_stress_input) {
                 case 'von Mises':
@@ -289,6 +314,48 @@ var app = new Vue({
                     return this.s_z;
             }
         },
+        fatigue_data_stress() {
+            let stresses = [];
+            this.fatigue_data_stress_raw.split(',').forEach(function (element) {
+                stresses.push(parseFloat(element));
+            });
+            let is_decreasing;
+            // check that stresss are decreasing
+            for (let i = 0; i < stresses.length-1; i++) {
+                if (stresses[i+1] < stresses[i]){ is_decreasing = true; }
+                else {
+                    is_decreasing = false;
+                    break;
+                }
+            }
+            if (!is_decreasing){
+                this.fatigue_input_warning1 = 'Stresses must be in decreasing order.';
+            } else {
+                this.fatigue_input_warning1 = '';
+            }
+            return stresses;
+        },
+        fatigue_data_cycles() {
+            let cycles = [];
+            this.fatigue_data_cycles_raw.split(',').forEach(function (element) {
+                cycles.push(parseFloat(element));
+            });
+            // check that cycles are increasing
+            let is_increasing;
+            for (let i = 0; i < cycles.length-1; i++) {
+                if (cycles[i+1] > cycles[i]){ is_increasing = true; }
+                else {
+                    is_increasing = false;
+                    break;
+                }
+            }
+            if (!is_increasing){
+                this.fatigue_input_warning2 = 'Cycles must be in increasing order.';
+            } else {
+                this.fatigue_input_warning2 = '';
+            }
+            return cycles;
+        }
     },
     mounted(){
         // Draw Mohr plot
@@ -318,6 +385,14 @@ var app = new Vue({
             this.calculate_cycles();
             this.update_fatigue_plot();
         },
+        left_end_condition(){
+            this.calculate_cycles();
+            this.update_fatigue_plot();
+        },
+        right_end_condition(){
+            this.calculate_cycles();
+            this.update_fatigue_plot();
+        },
         s_x() { this.draw_mohr_circle_plot() },
         s_y() { this.draw_mohr_circle_plot() },
         s_z() { this.draw_mohr_circle_plot() },
@@ -343,17 +418,12 @@ function interp1d(xs,ys){
     this.xmin = this.xs.reduce((a,c) => Math.min(a,c));
     this.xmax = this.xs.reduce((a,c) => Math.max(a,c));
     this.linterp = function(x){
-        if ( x < this.xmin) {
-            return 1
+        let start = this.xs.indexOf(_.findLast(this.xs,function(e){ return e <= x }));
+        if (start == this.xs.length-1){
+            return interp(this.xs[start-1], this.xs[start], this.ys[start-1], this.ys[start], x);
         }
         else {
-            let start = this.xs.indexOf(_.findLast(this.xs,function(e){ return e <= x }));
-            if (start == this.xs.length-1){
-                return interp(this.xs[start-1], this.xs[start], this.ys[start-1], this.ys[start], x);
-            }
-            else {
-                return interp(this.xs[start], this.xs[start+1], this.ys[start], this.ys[start+1], x);
-            }
+            return interp(this.xs[start], this.xs[start+1], this.ys[start], this.ys[start+1], x);
         }
     }
 }
